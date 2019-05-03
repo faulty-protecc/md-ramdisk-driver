@@ -134,6 +134,7 @@ static int __init sbd_init(void) {
 	 * Get registered.
 	 */
 	major_num = register_blkdev(major_num, "sbd");
+	printk("WHO GOT THIS BIG DICK ENERGY?? WE DO!! WOOOO!! OUR MAJOR_NUM ISSSSS %d", &major_num);
 	if (major_num < 0) {
 		printk(KERN_WARNING "sbd: unable to get major number\n");
 		goto out;
