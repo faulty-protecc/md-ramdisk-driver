@@ -62,7 +62,7 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		printk (KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
 		return;
 	}
-	printk("CHRISTIANITY DEBUG: pid of current process is %d", current->pid);
+	printk("CHRISTIANITY DEBUG: pid of current process is %d", task_pid_nr(current));
 	printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
 	printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
 	if (write)
