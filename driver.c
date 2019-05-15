@@ -54,22 +54,24 @@ static struct sbd_device {
  * Handle an I/O request.
  */
 static void sbd_transfer(struct sbd_device *dev, sector_t sector,
-                         unsigned long nsect, char *buffer, int write) {
-  unsigned long offset = sector * logical_block_size;
-  unsigned long nbytes = nsect * logical_block_size;
+		unsigned long nsect, char *buffer, int write) {
+	unsigned long offset = sector * logical_block_size;
+	unsigned long nbytes = nsect * logical_block_size;
 
-  if ((offset + nbytes) > dev->size) {
-    printk(KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
-    return;
-  }
-  printk("CHRISTIANITY DEBUG: pid of current process is %d",
-         task_pid_nr(current));
-  printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
-  printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
-  if (write)
-    memcpy(dev->data + offset, buffer, nbytes);
-  else
-    memcpy(buffer, dev->data + offset, nbytes);
+	if ((offset + nbytes) > dev->size) {
+		printk(KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
+		return;
+	}
+	printk("CHRISTIANITY DEBUG: pid of current process is %d", task_pid_nr(current));
+	printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
+	printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
+	if (write) {
+		printk("CHRISTIANITY DEBUG: writing to device");
+		memcpy(dev->data + offset, buffer, nbytes);
+	} else {
+		printk("CHRISTIANITY DEBUG: reading from device");
+		memcpy(buffer, dev->data + offset, nbytes);
+	}
 }
 
 static void sbd_request(struct request_queue *q) {
