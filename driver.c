@@ -40,6 +40,7 @@ module_param(nsectors, int, 0);
  */
 static struct request_queue *Queue;
 
+static int dev_is_ready = 0;
 /*
  * The internal representation of our device.
  */
@@ -74,6 +75,66 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 	}
 }
 
+static void clear_device_fs_cache(void) {
+	int return_code;
+	char* argv[] = {"/bin/bash","-c","/bin/dd of=/dev/sbd0 oflag=nocache conv=notrunc,fdatasync count=0 >> /kernel_test.log",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	printk("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
+}
+
+static void mkfs(void) {
+	int return_code;
+	char* argv[] = {"/sbin/mkfs.ext4","/dev/sbd0",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	printk("CHRISTIANITY DEBUG: return code of mkfs.ext4 was %d", return_code);
+}
+
+static void mount_dev(void) {
+	int return_code;
+	char* argv[] = {"/bin/mount","/dev/sbd0","/mnt/ramdisk_test/",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
+}
+
+static void umount_dev(void) {
+	int return_code;
+	char* argv[] = {"/bin/umount","/mnt/ramdisk_test/",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	printk("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
+}
+
+static int check_if_clearing(void) {
+  int return_code;
+  char command[256];
+  snprintf(command,
+    256,
+    "cat -A /proc/%d/cmdline | grep \"/bin/dd^@of=/dev/sbd0^@oflag=nocache^@conv=notrunc,fdatasync^@count=0\"",
+    task_pid_nr(current));
+  // snprintf(command,
+  //   256,
+  //   "cat -A /proc/%d/cmdline > kernel_test.log",
+  //   task_pid_nr(current));
+	char* argv[] = {"/bin/bash","-c",command,NULL};
+	char* envp[] = {NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: command was %s",command);
+	printk("CHRISTIANITY DEBUG: return code of the clearing test was %d", return_code);
+  char new_command[256];
+  snprintf(new_command,
+    256,
+    "cat -A /proc/%d/cmdline >> kernel_test.log",
+    task_pid_nr(current));
+  char* new_argv[] = {"/bin/bash","-c",new_command,NULL};
+	char* new_envp[] = {NULL};
+	call_usermodehelper(new_argv[0],new_argv,new_envp,UMH_WAIT_PROC);
+  if(!return_code) printk("CHRISTIANITY DEBUG: currently clearing cache");
+	return return_code;
+}
+
 static void sbd_request(struct request_queue *q) {
   struct request *req;
 
@@ -96,6 +157,9 @@ static void sbd_request(struct request_queue *q) {
     }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
+	  if(dev_is_ready && check_if_clearing()) { 
+      clear_device_fs_cache();
+    }
     if (!__blk_end_request_cur(req, 0)) {
       req = blk_fetch_request(q);
     }
@@ -166,7 +230,9 @@ static int __init sbd_init(void) {
   set_capacity(Device.gd, nsectors);
   Device.gd->queue = Queue;
   add_disk(Device.gd);
-
+  mkfs();
+  mount_dev();
+  dev_is_ready = 1;
   return 0;
 
 out_unregister:
@@ -177,6 +243,7 @@ out:
 }
 
 static void __exit sbd_exit(void) {
+  dev_is_ready = 0;
   del_gendisk(Device.gd);
   put_disk(Device.gd);
   unregister_blkdev(major_num, "sbd");
