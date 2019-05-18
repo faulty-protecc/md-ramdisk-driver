@@ -94,15 +94,24 @@ static void clear_device_fs_cache(void) {
 
 static void mkfs(void) {
   int return_code;
-  char *argv[] = {"/sbin/mkfs.ext4", "/dev/sbd0", NULL};
+  char *argv[] = {"/sbin/mkfs.ext2", "/dev/sbd0", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of mkfs.ext4 was %d", return_code);
+  printk("CHRISTIANITY DEBUG: return code of mkfs.ext2 was %d", return_code);
+}
+
+static void prepare_mount_folder(void) {
+  int return_code;
+  char *argv[] = {"/bin/mkdir", "/mnt/ramdisk_test", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISANITY DEBUG: return code of mkdir was %d", return_code);
 }
 
 static void mount_dev(void) {
   int return_code;
-  char *argv[] = {"/bin/mount", "/dev/sbd0", "/mnt/ramdisk_test/", NULL};
+  char *argv[] = {"/bin/mount",         "-o", "sync", "-t", "ext2", "/dev/sbd0",
+                  "/mnt/ramdisk_test/", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
   printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
@@ -300,10 +309,11 @@ static int __init sbd_init(void) {
   set_capacity(Device.gd, nsectors);
   Device.gd->queue = Queue;
   add_disk(Device.gd);
-  /*mkfs();
+  mkfs();
+  prepare_mount_folder();
   mount_dev();
-  sync();
-  dev_is_ready = 1;*/
+  // sync();
+  // dev_is_ready = 1;
   return 0;
 
 out_unregister:
