@@ -2,7 +2,7 @@ FROM	ubuntu:bionic
 
 # Install make and dependencies
 RUN	apt-get update && \
-	apt-get -y install libssl-dev wget tar xz-utils make gcc bc linux-headers-4.15.0-47 && \
+	apt-get -y install libssl-dev wget tar xz-utils make gcc bc linux-headers-4.15.0-47 kernel-devel && \
 	apt-get clean
 
 # Install linaro gcc compailer
