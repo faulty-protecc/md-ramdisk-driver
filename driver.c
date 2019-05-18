@@ -12,12 +12,12 @@
 
 #include <linux/blkdev.h>
 #include <linux/errno.h> /* error codes */
-#include <linux/mm.h>
 #include <linux/fs.h>    /* everything... */
 #include <linux/genhd.h>
 #include <linux/hdreg.h>
 #include <linux/kernel.h> /* printk() */
-#include <linux/types.h>  /* size_t */
+#include <linux/mm.h>
+#include <linux/types.h> /* size_t */
 #include <linux/vmalloc.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -58,65 +58,70 @@ static struct sbd_device {
  * Handle an I/O request.
  */
 static void sbd_transfer(struct sbd_device *dev, sector_t sector,
-		unsigned long nsect, char *buffer, int write) {
-	unsigned long offset = sector * logical_block_size;
-	unsigned long nbytes = nsect * logical_block_size;
+                         unsigned long nsect, char *buffer, int write) {
+  unsigned long offset = sector * logical_block_size;
+  unsigned long nbytes = nsect * logical_block_size;
 
-	if ((offset + nbytes) > dev->size) {
-		printk(KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
-		return;
-	}
-	printk("CHRISTIANITY DEBUG: pid of current process is %d", task_pid_nr(current));
-	printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
-  printk("CHRISTIANITY DEBUG: ppid of current process is %d", task_pid_nr(current->real_parent));
-	printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
-	if (write && !dev_is_ready) {
-		printk("CHRISTIANITY DEBUG: writing to device");
-		memcpy(dev->data + offset, buffer, nbytes);
-	} else {
-		printk("CHRISTIANITY DEBUG: reading from device");
-		memcpy(buffer, dev->data + offset, nbytes);
-	}
+  if ((offset + nbytes) > dev->size) {
+    printk(KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
+    return;
+  }
+  printk("CHRISTIANITY DEBUG: pid of current process is %d",
+         task_pid_nr(current));
+  printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
+  printk("CHRISTIANITY DEBUG: ppid of current process is %d",
+         task_pid_nr(current->real_parent));
+  printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
+  if (write && !dev_is_ready) {
+    printk("CHRISTIANITY DEBUG: writing to device");
+    memcpy(dev->data + offset, buffer, nbytes);
+  } else {
+    printk("CHRISTIANITY DEBUG: reading from device");
+    memcpy(buffer, dev->data + offset, nbytes);
+  }
 }
 
 static void clear_device_fs_cache(void) {
-	int return_code;
-	char* argv[] = {"/bin/bash","-c","/bin/dd of=/dev/sbd0 oflag=nocache conv=notrunc,fdatasync count=0 >> /kernel_test.log",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_EXEC);
-	printk("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
+  int return_code;
+  char *argv[] = {"/bin/bash", "-c",
+                  "/bin/dd of=/dev/sbd0 oflag=nocache conv=notrunc,fdatasync "
+                  "count=0 >> /kernel_test.log",
+                  NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+  printk("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
 }
 
 static void mkfs(void) {
-	int return_code;
-	char* argv[] = {"/sbin/mkfs.ext4","/dev/sbd0",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
-	printk("CHRISTIANITY DEBUG: return code of mkfs.ext4 was %d", return_code);
+  int return_code;
+  char *argv[] = {"/sbin/mkfs.ext4", "/dev/sbd0", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: return code of mkfs.ext4 was %d", return_code);
 }
 
 static void mount_dev(void) {
-	int return_code;
-	char* argv[] = {"/bin/mount","/dev/sbd0","/mnt/ramdisk_test/",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
-	printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
+  int return_code;
+  char *argv[] = {"/bin/mount", "/dev/sbd0", "/mnt/ramdisk_test/", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
 }
 
 static void umount_dev(void) {
-	int return_code;
-	char* argv[] = {"/bin/umount","/mnt/ramdisk_test/",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
-	printk("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
+  int return_code;
+  char *argv[] = {"/bin/umount", "/mnt/ramdisk_test/", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
 }
 
 static void sync(void) {
-	int return_code;
-	char* argv[] = {"/bin/sync",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
-	printk("CHRISTIANITY DEBUG: return code of sync was %d", return_code);
+  int return_code;
+  char *argv[] = {"/bin/sync", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: return code of sync was %d", return_code);
 }
 
 static int check_if_running_from_kernel(void) {
@@ -135,7 +140,8 @@ static int check_if_running_from_kernel(void) {
     current_real_grandpa_pid = task_pid_nr(current_real_grandpa);
   }
 
-  printk("CHRISTIANITY DEBUG: real_grandpa pid is %d", current_real_grandpa_pid);
+  printk("CHRISTIANITY DEBUG: real_grandpa pid is %d",
+         current_real_grandpa_pid);
   if (current_real_parent_pid == 2 || current_real_grandpa_pid == 2) {
     printk("CHRISTIANITY DEBUG: called from the kernel");
     return 1;
@@ -147,37 +153,40 @@ static int check_if_running_from_kernel(void) {
 static int check_if_clearing(void) {
   int return_code;
   char command[256];
-  snprintf(command,
-    256,
-    "cat -A /proc/%d/cmdline | grep \"/bin/dd^@of=/dev/sbd0^@oflag=nocache^@conv=notrunc,fdatasync^@count=0\"",
-    task_pid_nr(current));
+  snprintf(command, 256,
+           "cat -A /proc/%d/cmdline | grep "
+           "\"/bin/dd^@of=/dev/"
+           "sbd0^@oflag=nocache^@conv=notrunc,fdatasync^@count=0\"",
+           task_pid_nr(current));
   // snprintf(command,
   //   256,
   //   "cat -A /proc/%d/cmdline > kernel_test.log",
   //   task_pid_nr(current));
-	char* argv[] = {"/bin/bash","-c",command,NULL};
-	char* envp[] = {NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: command was %s",command);
-	printk("CHRISTIANITY DEBUG: return code of the clearing test was %d", return_code);
+  char *argv[] = {"/bin/bash", "-c", command, NULL};
+  char *envp[] = {NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+  printk("CHRISTIANITY DEBUG: command was %s", command);
+  printk("CHRISTIANITY DEBUG: return code of the clearing test was %d",
+         return_code);
   char new_command[256];
-  snprintf(new_command,
-    256,
-    "cat -A /proc/%d/cmdline >> kernel_test.log && echo >> kernel_test.log",
-    task_pid_nr(current));
-  char* new_argv[] = {"/bin/bash","-c",new_command,NULL};
-	char* new_envp[] = {NULL};
-	call_usermodehelper(new_argv[0],new_argv,new_envp,UMH_WAIT_PROC);
-  if(!return_code) printk("CHRISTIANITY DEBUG: currently clearing cache");
-	return return_code;
+  snprintf(
+      new_command, 256,
+      "cat -A /proc/%d/cmdline >> kernel_test.log && echo >> kernel_test.log",
+      task_pid_nr(current));
+  char *new_argv[] = {"/bin/bash", "-c", new_command, NULL};
+  char *new_envp[] = {NULL};
+  call_usermodehelper(new_argv[0], new_argv, new_envp, UMH_WAIT_PROC);
+  if (!return_code)
+    printk("CHRISTIANITY DEBUG: currently clearing cache");
+  return return_code;
 }
 
 static void drop_caches(void) {
   int return_code;
-	char* argv[] = {"/bin/bash","-c","echo 1 > /proc/sys/vm/drop_caches",NULL};
-	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_EXEC);
-	printk("CHRISTIANITY DEBUG: return code of drop_caches was %d", return_code);
+  char *argv[] = {"/bin/bash", "-c", "echo 1 > /proc/sys/vm/drop_caches", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+  printk("CHRISTIANITY DEBUG: return code of drop_caches was %d", return_code);
 }
 
 static void sbd_request(struct request_queue *q) {
@@ -204,7 +213,9 @@ static void sbd_request(struct request_queue *q) {
     }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
-    int response_code = -dev_is_ready;
+
+    // TODO - liron u fucking mong
+    int response_code = 0;
 
     if (check_if_running_from_kernel()) {
       printk("CHRISTIANITY DEBUG: returning success to request");
@@ -217,7 +228,7 @@ static void sbd_request(struct request_queue *q) {
     // if (dev_is_ready) {
     //   drop_caches();
     // }
-    // if(dev_is_ready && !currently_clearing) { 
+    // if(dev_is_ready && !currently_clearing) {
     //   currently_clearing = 1;
     //   clear_device_fs_cache();
     //   currently_clearing = 0;
@@ -289,10 +300,10 @@ static int __init sbd_init(void) {
   set_capacity(Device.gd, nsectors);
   Device.gd->queue = Queue;
   add_disk(Device.gd);
-  mkfs();
+  /*mkfs();
   mount_dev();
   sync();
-  dev_is_ready = 1;
+  dev_is_ready = 1;*/
   return 0;
 
 out_unregister:
