@@ -12,6 +12,7 @@
 
 #include <linux/blkdev.h>
 #include <linux/errno.h> /* error codes */
+#include <linux/mm.h>
 #include <linux/fs.h>    /* everything... */
 #include <linux/genhd.h>
 #include <linux/hdreg.h>
@@ -41,6 +42,8 @@ module_param(nsectors, int, 0);
 static struct request_queue *Queue;
 
 static int dev_is_ready = 0;
+static int currently_clearing = 0;
+
 /*
  * The internal representation of our device.
  */
@@ -65,8 +68,9 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 	}
 	printk("CHRISTIANITY DEBUG: pid of current process is %d", task_pid_nr(current));
 	printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
+  printk("CHRISTIANITY DEBUG: ppid of current process is %d", task_pid_nr(current->real_parent));
 	printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
-	if (write) {
+	if (write && !dev_is_ready) {
 		printk("CHRISTIANITY DEBUG: writing to device");
 		memcpy(dev->data + offset, buffer, nbytes);
 	} else {
@@ -79,7 +83,7 @@ static void clear_device_fs_cache(void) {
 	int return_code;
 	char* argv[] = {"/bin/bash","-c","/bin/dd of=/dev/sbd0 oflag=nocache conv=notrunc,fdatasync count=0 >> /kernel_test.log",NULL};
 	char *envp[] = {"HOME=/", NULL};
-	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_EXEC);
 	printk("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
 }
 
@@ -107,6 +111,39 @@ static void umount_dev(void) {
 	printk("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
 }
 
+static void sync(void) {
+	int return_code;
+	char* argv[] = {"/bin/sync",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_PROC);
+	printk("CHRISTIANITY DEBUG: return code of sync was %d", return_code);
+}
+
+static int check_if_running_from_kernel(void) {
+  int current_real_parent_pid;
+  int current_real_grandpa_pid;
+  struct task_struct *current_real_parent;
+  struct task_struct *current_real_grandpa;
+
+  current_real_grandpa_pid = 0;
+  current_real_parent = current->real_parent;
+  current_real_parent_pid = task_pid_nr(current_real_parent);
+
+  if (current_real_parent != NULL) {
+    printk("CHRISTIANITY DEBUG: real_parent is not NULL");
+    current_real_grandpa = current_real_parent->real_parent;
+    current_real_grandpa_pid = task_pid_nr(current_real_grandpa);
+  }
+
+  printk("CHRISTIANITY DEBUG: real_grandpa pid is %d", current_real_grandpa_pid);
+  if (current_real_parent_pid == 2 || current_real_grandpa_pid == 2) {
+    printk("CHRISTIANITY DEBUG: called from the kernel");
+    return 1;
+  }
+  printk("CHRISTIANITY DEBUG: not called from the kernel");
+  return 0;
+}
+
 static int check_if_clearing(void) {
   int return_code;
   char command[256];
@@ -126,7 +163,7 @@ static int check_if_clearing(void) {
   char new_command[256];
   snprintf(new_command,
     256,
-    "cat -A /proc/%d/cmdline >> kernel_test.log",
+    "cat -A /proc/%d/cmdline >> kernel_test.log && echo >> kernel_test.log",
     task_pid_nr(current));
   char* new_argv[] = {"/bin/bash","-c",new_command,NULL};
 	char* new_envp[] = {NULL};
@@ -135,8 +172,18 @@ static int check_if_clearing(void) {
 	return return_code;
 }
 
+static void drop_caches(void) {
+  int return_code;
+	char* argv[] = {"/bin/bash","-c","echo 1 > /proc/sys/vm/drop_caches",NULL};
+	char *envp[] = {"HOME=/", NULL};
+	return_code = call_usermodehelper(argv[0],argv,envp,UMH_WAIT_EXEC);
+	printk("CHRISTIANITY DEBUG: return code of drop_caches was %d", return_code);
+}
+
 static void sbd_request(struct request_queue *q) {
   struct request *req;
+  struct block_device *bd;
+  struct address_space *mapping;
 
   req = blk_fetch_request(q);
   while (req != NULL) {
@@ -157,12 +204,24 @@ static void sbd_request(struct request_queue *q) {
     }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
-	  if(dev_is_ready && check_if_clearing()) { 
-      clear_device_fs_cache();
+    int response_code = -dev_is_ready;
+
+    if (check_if_running_from_kernel()) {
+      printk("CHRISTIANITY DEBUG: returning success to request");
+      response_code = 0;
     }
-    if (!__blk_end_request_cur(req, 0)) {
+
+    if (!__blk_end_request_cur(req, response_code)) {
       req = blk_fetch_request(q);
     }
+    // if (dev_is_ready) {
+    //   drop_caches();
+    // }
+    // if(dev_is_ready && !currently_clearing) { 
+    //   currently_clearing = 1;
+    //   clear_device_fs_cache();
+    //   currently_clearing = 0;
+    // }
   }
 }
 
@@ -232,6 +291,7 @@ static int __init sbd_init(void) {
   add_disk(Device.gd);
   mkfs();
   mount_dev();
+  sync();
   dev_is_ready = 1;
   return 0;
 
