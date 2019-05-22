@@ -159,6 +159,8 @@ static void send_to_user(char *msg) {
   nlh = nlmsg_put(skb, 0, 1, NLMSG_DONE, msg_size + 1, 0);
   strcpy(nlmsg_data(nlh), msg);
 
+  pr_info("What we are going to send is %s\n", nlmsg_data(nlh));
+
   pr_info("Sending skb.\n");
   res = nlmsg_multicast(nl_sk, skb, 0, MYGRP, GFP_KERNEL);
   if (res < 0) {
@@ -285,8 +287,6 @@ static void sbd_request(struct request_queue *q) {
     // it is read or write.
     if (rq_data_dir(req) == 1) {
       printk("Hello my friend. Time to go home. :(\n");
-      printk("I AM REPORTING YOU TO THE AUTHORITAAAAAAAA\n");
-      // send_to_user();
     }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
@@ -297,6 +297,13 @@ static void sbd_request(struct request_queue *q) {
     if (check_if_running_from_kernel()) {
       printk("CHRISTIANITY DEBUG: returning success to request");
       response_code = 0;
+    } else {
+      // TODO - Liron, Should I do this here on at the block of code below..?
+      int currPID = task_pid_nr(current);
+      char str[12];
+      sprintf(str, "%d", currPID);
+
+      send_to_user(str);
     }
 
     if (!__blk_end_request_cur(req, response_code)) {
@@ -337,6 +344,16 @@ static struct block_device_operations sbd_ops = {.owner = THIS_MODULE,
                                                  .getgeo = sbd_getgeo};
 
 static int __init sbd_init(void) {
+  start_userspace_server();
+  msleep(0);
+  struct sock *sock1 = conn_serv_multicast_sock();
+
+  if (!sock1) {
+    printk("Failed to create multicast socket!\n");
+  } else {
+    printk("Multicast socket created succesfully.\n");
+  }
+
   /*
    * Set up our internal device.
    */
@@ -380,15 +397,6 @@ static int __init sbd_init(void) {
   mkfs();
   prepare_mount_folder();
   mount_dev();
-  start_userspace_server();
-  msleep(0);
-  struct sock *sock1 = conn_serv_multicast_sock();
-
-  if (!sock1) {
-    printk("Failed to create multicast socket!\n");
-  } else {
-    printk("Multicast socket created succesfully.\n");
-  }
 
   // sync();
   // dev_is_ready = 1;
