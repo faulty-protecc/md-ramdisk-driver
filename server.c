@@ -47,7 +47,7 @@ int open_netlink(void) {
   return sock;
 }
 
-void read_event(int sock) {
+int read_event(int sock) {
   struct sockaddr_nl nladdr;
   struct msghdr msg;
   struct iovec iov;
@@ -65,9 +65,22 @@ void read_event(int sock) {
   ret = recvmsg(sock, &msg, 0);
   if (ret < 0)
     printf("ret < 0.\n");
-  else
+  else {
+    char *message = NLMSG_DATA((struct nlmsghdr *)&buffer);
+    if (strcmp(message, "kys") == 0) {
+      printf("WELL GUYS IT WAS FUN BUT NOW I HAVE TO LEAVE IT WAS A GOOD RIDE "
+             "AND I WILL SURE MISS THIS PLANET. FUCK YOU - I'M GOING BACK TO "
+             "SPACE! I'M GONNA DO CRACK! HAHA XDDDDDDDDDDDDD");
+      // If it wasn't clear - I'm gonna need to die. Excuse moa lol
+      return 1;
+    }
+
     printf("Received message payload: %s\n",
            NLMSG_DATA((struct nlmsghdr *)&buffer));
+
+    // Another day, another smile :)
+    return 0;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -77,8 +90,9 @@ int main(int argc, char *argv[]) {
   if (nls < 0)
     return nls;
 
-  while (1)
-    read_event(nls);
+  int shouldIDie = 0;
+  while (!shouldIDie)
+    shouldIDie = read_event(nls);
 
   return 0;
 }

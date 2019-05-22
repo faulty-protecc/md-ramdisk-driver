@@ -11,6 +11,8 @@
 /* Multicast group, consistent in both kernel prog and user prog. */
 #define MYGRP 31
 
+#include <linux/delay.h>
+
 #include <linux/netlink.h>
 #include <net/net_namespace.h>
 #include <net/netlink.h>
@@ -133,6 +135,7 @@ static void start_userspace_server(void) {
   char *argv[] = {"/home/dean/Projects/md-ramdisk-driver/server", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+
   printk("CHRISTIANITY DEBUG: return code of start_userspace_server was %d\n",
          return_code);
 }
@@ -140,7 +143,8 @@ static void start_userspace_server(void) {
 static void send_to_user(void) {
   struct sk_buff *skb;
   struct nlmsghdr *nlh;
-  char *msg = "Hello from kernel";
+  // char *msg = "Hello from kernel";
+  char *msg = "kys";
   int msg_size = strlen(msg) + 1;
   int res;
 
@@ -376,6 +380,7 @@ static int __init sbd_init(void) {
   prepare_mount_folder();
   mount_dev();
   // start_userspace_server();
+  // msleep(100);
   struct sock *sock1 = conn_serv_multicast_sock();
 
   if (!sock1) {
