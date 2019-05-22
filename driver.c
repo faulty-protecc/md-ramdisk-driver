@@ -381,7 +381,7 @@ static int __init sbd_init(void) {
   prepare_mount_folder();
   mount_dev();
   start_userspace_server();
-  msleep(1);
+  msleep(0);
   struct sock *sock1 = conn_serv_multicast_sock();
 
   if (!sock1) {
