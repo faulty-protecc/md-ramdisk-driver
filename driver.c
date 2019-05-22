@@ -6,6 +6,15 @@
  * Redistributable under the terms of the GNU GPL.
  */
 
+/* Protocol family, consistent in both kernel prog and user prog. */
+#define MYPROTO NETLINK_USERSOCK
+/* Multicast group, consistent in both kernel prog and user prog. */
+#define MYGRP 31
+
+#include <linux/netlink.h>
+#include <net/net_namespace.h>
+#include <net/netlink.h>
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -35,6 +44,8 @@ module_param(nsectors, int, 0);
  * in terms of small sectors, always.
  */
 #define KERNEL_SECTOR_SIZE 512
+
+static struct sock *nl_sk = NULL;
 
 /*
  * Our request queue.
@@ -115,6 +126,56 @@ static void mount_dev(void) {
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
   printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
+}
+
+static void start_userspace_server(void) {
+  int return_code;
+  char *argv[] = {"/home/dean/Projects/md-ramdisk-driver/server", NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+  printk("CHRISTIANITY DEBUG: return code of start_userspace_server was %d\n",
+         return_code);
+}
+
+static void send_to_user(void) {
+  struct sk_buff *skb;
+  struct nlmsghdr *nlh;
+  char *msg = "Hello from kernel";
+  int msg_size = strlen(msg) + 1;
+  int res;
+
+  pr_info("Creating skb.\n");
+  skb = nlmsg_new(NLMSG_ALIGN(msg_size + 1), GFP_KERNEL);
+  if (!skb) {
+    pr_err("Allocation failure.\n");
+    return;
+  }
+
+  nlh = nlmsg_put(skb, 0, 1, NLMSG_DONE, msg_size + 1, 0);
+  strcpy(nlmsg_data(nlh), msg);
+
+  pr_info("Sending skb.\n");
+  res = nlmsg_multicast(nl_sk, skb, 0, MYGRP, GFP_KERNEL);
+  if (res < 0) {
+    pr_info("nlmsg_multicast() error: %d\n", res);
+    return NULL;
+  } else
+    pr_info("Success.\n");
+}
+
+static struct sock *conn_serv_multicast_sock(void) {
+  nl_sk = netlink_kernel_create(&init_net, MYPROTO, NULL);
+  if (!nl_sk) {
+    pr_err("Error creating socket.\n");
+    return NULL;
+  }
+
+  send_to_user();
+
+  // netlink_kernel_release(nl_sk);
+  // return 0;
+
+  return nl_sk;
 }
 
 static void umount_dev(void) {
@@ -218,7 +279,9 @@ static void sbd_request(struct request_queue *q) {
     // file system, and we want to handle it - check whether or not
     // it is read or write.
     if (rq_data_dir(req) == 1) {
-      printk("Hello my friend. Time to go home. :(");
+      printk("Hello my friend. Time to go home. :(\n");
+      printk("I AM REPORTING YOU TO THE AUTHORITAAAAAAAA\n");
+      // send_to_user();
     }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
@@ -312,6 +375,15 @@ static int __init sbd_init(void) {
   mkfs();
   prepare_mount_folder();
   mount_dev();
+  // start_userspace_server();
+  struct sock *sock1 = conn_serv_multicast_sock();
+
+  if (!sock1) {
+    printk("Failed to create multicast socket!\n");
+  } else {
+    printk("Multicast socket created succesfully.\n");
+  }
+
   // sync();
   // dev_is_ready = 1;
   return 0;
@@ -330,6 +402,7 @@ static void __exit sbd_exit(void) {
   unregister_blkdev(major_num, "sbd");
   blk_cleanup_queue(Queue);
   vfree(Device.data);
+  netlink_kernel_release(nl_sk);
 }
 
 module_init(sbd_init);
