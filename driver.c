@@ -54,6 +54,8 @@ static struct sock *nl_sk = NULL;
  */
 static struct request_queue *Queue;
 
+static char *terminationStr = "kys";
+
 static int dev_is_ready = 0;
 static int currently_clearing = 0;
 
@@ -140,11 +142,10 @@ static void start_userspace_server(void) {
          return_code);
 }
 
-static void send_to_user(void) {
+static void send_to_user(char *msg) {
   struct sk_buff *skb;
   struct nlmsghdr *nlh;
   // char *msg = "Hello from kernel";
-  char *msg = "kys";
   int msg_size = strlen(msg) + 1;
   int res;
 
@@ -174,7 +175,7 @@ static struct sock *conn_serv_multicast_sock(void) {
     return NULL;
   }
 
-  send_to_user();
+  send_to_user("Hello Bosses");
 
   // netlink_kernel_release(nl_sk);
   // return 0;
@@ -379,8 +380,8 @@ static int __init sbd_init(void) {
   mkfs();
   prepare_mount_folder();
   mount_dev();
-  // start_userspace_server();
-  // msleep(100);
+  start_userspace_server();
+  msleep(1);
   struct sock *sock1 = conn_serv_multicast_sock();
 
   if (!sock1) {
@@ -407,6 +408,7 @@ static void __exit sbd_exit(void) {
   unregister_blkdev(major_num, "sbd");
   blk_cleanup_queue(Queue);
   vfree(Device.data);
+  send_to_user(terminationStr);
   netlink_kernel_release(nl_sk);
 }
 
