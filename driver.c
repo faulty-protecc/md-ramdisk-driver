@@ -40,6 +40,8 @@ static int logical_block_size = 512;
 module_param(logical_block_size, int, 0);
 static int nsectors = 1024; /* How big the drive is */
 module_param(nsectors, int, 0);
+static char* server_program_path;
+module_param(server_program_path,charp,0);
 
 /*
  * We can tweak our hardware sector size, but the kernel talks to us
@@ -135,7 +137,7 @@ static void mount_dev(void) {
 
 static void start_userspace_server(void) {
   int return_code;
-  char *argv[] = {"/home/dean/Projects/md-ramdisk-driver/server", NULL};
+  char *argv[] = {server_program_path, NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
 
