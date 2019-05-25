@@ -1,8 +1,10 @@
 #include <linux/netlink.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 /* Protocol family, consistent in both kernel prog and user prog. */
@@ -75,8 +77,19 @@ int read_event(int sock) {
       return 1;
     }
 
-    printf("Received message payload: %s\n",
-           NLMSG_DATA((struct nlmsghdr *)&buffer));
+    char *payload = NLMSG_DATA((struct nlmsghdr *)&buffer);
+
+    int pid = atoi(payload);
+
+    printf("Received message payload: %s\n", payload);
+
+    if (pid == 0) {
+      printf("Received payload is not a number! not a possible PID");
+    } else {
+      printf("Killing this mofo...");
+
+      kill(pid, SIGKILL);
+    }
 
     // Another day, another smile :)
     return 0;
