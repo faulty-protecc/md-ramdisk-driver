@@ -70,9 +70,7 @@ int read_event(int sock) {
   else {
     char *message = NLMSG_DATA((struct nlmsghdr *)&buffer);
     if (strcmp(message, "kys") == 0) {
-      printf("WELL GUYS IT WAS FUN BUT NOW I HAVE TO LEAVE IT WAS A GOOD RIDE "
-             "AND I WILL SURE MISS THIS PLANET. FUCK YOU - I'M GOING BACK TO "
-             "SPACE! I'M GONNA DO CRACK! HAHA XDDDDDDDDDDDDD");
+      printf("Shutting down server.");
       // If it wasn't clear - I'm gonna need to die. Excuse moa lol
       return 1;
     }
@@ -84,9 +82,9 @@ int read_event(int sock) {
     printf("Received message payload: %s\n", payload);
 
     if (pid == 0) {
-      printf("Received payload is not a number! not a possible PID");
+      printf("Received payload is not a number! not a possible PID.");
     } else {
-      printf("Killing this mofo...");
+      printf("Killing this process...");
 
       kill(pid, SIGKILL);
     }

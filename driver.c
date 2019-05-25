@@ -78,7 +78,8 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
   unsigned long nbytes = nsect * logical_block_size;
 
   if ((offset + nbytes) > dev->size) {
-    printk(KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
+    printk("CHRISTIANITY DEBUG: sbd: Beyond-end write (%ld %ld)\n", offset,
+           nbytes);
     return;
   }
   printk("CHRISTIANITY DEBUG: pid of current process is %d",
@@ -120,7 +121,7 @@ static void prepare_mount_folder(void) {
   char *argv[] = {"/bin/mkdir", "/mnt/ramdisk_test", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISANITY DEBUG: return code of mkdir was %d", return_code);
+  printk("CHRISTIANITY DEBUG: return code of mkdir was %d", return_code);
 }
 
 static void mount_dev(void) {
@@ -159,15 +160,17 @@ static void send_to_user(char *msg) {
   nlh = nlmsg_put(skb, 0, 1, NLMSG_DONE, msg_size + 1, 0);
   strcpy(nlmsg_data(nlh), msg);
 
-  pr_info("What we are going to send is %s\n", nlmsg_data(nlh));
+  pr_info("CHRISTIANITY DEBUG: Preparing to send %s\n", nlmsg_data(nlh));
 
   pr_info("Sending skb.\n");
+
+  pr_info("CHRISTIANITY DEBUG: Starting to send skb to server.\n");
   res = nlmsg_multicast(nl_sk, skb, 0, MYGRP, GFP_KERNEL);
   if (res < 0) {
-    pr_info("nlmsg_multicast() error: %d\n", res);
+    pr_info("CHRISTIANITY DEBUG: error in nlmsg_multicast(). code: %d\n", res);
     return NULL;
   } else
-    pr_info("Success.\n");
+    pr_info("CHRISTIANITY DEBUG: Successfully sent skb.");
 }
 
 static struct sock *conn_serv_multicast_sock(void) {
@@ -178,9 +181,6 @@ static struct sock *conn_serv_multicast_sock(void) {
   }
 
   send_to_user("Hello Bosses");
-
-  // netlink_kernel_release(nl_sk);
-  // return 0;
 
   return nl_sk;
 }
@@ -277,7 +277,7 @@ static void sbd_request(struct request_queue *q) {
     // Christian Paro for the heads up and fix...
     // if (!blk_fs_request(req)) {
     if (req == NULL || blk_rq_is_passthrough(req)) {
-      printk(KERN_NOTICE "Skip non-CMD request\n");
+      printk("CHRISTIANITY DEBUG: Skip non-CMD request\n");
       __blk_end_request_all(req, -EIO);
       continue;
     }
@@ -285,13 +285,11 @@ static void sbd_request(struct request_queue *q) {
     // In case the received request was not bypassing the
     // file system, and we want to handle it - check whether or not
     // it is read or write.
-    if (rq_data_dir(req) == 1) {
-      printk("Hello my friend. Time to go home. :(\n");
-    }
+    // if (rq_data_dir(req) == 1) {
+    // }
     sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
                  bio_data(req->bio), rq_data_dir(req));
 
-    // TODO - liron u fucking mong
     int response_code = 0;
 
     if (check_if_running_from_kernel()) {
@@ -349,9 +347,9 @@ static int __init sbd_init(void) {
   struct sock *sock1 = conn_serv_multicast_sock();
 
   if (!sock1) {
-    printk("Failed to create multicast socket!\n");
+    printk("CHRISTIANITY DEBUG: Failed to create multicast socket!\n");
   } else {
-    printk("Multicast socket created succesfully.\n");
+    printk("CHRISTIANITY DEBUG: Multicast socket created succesfully.\n");
   }
 
   /*
@@ -373,11 +371,10 @@ static int __init sbd_init(void) {
    * Get registered.
    */
   major_num = register_blkdev(major_num, "sbd");
-  printk(
-      "WHO GOT THIS BIG DICK ENERGY?? WE DO!! WOOOO!! OUR MAJOR_NUM ISSSSS %d",
-      &major_num);
+  printk("CHRISTIANITY DEBUG: Registered device succesfully! Major number: %d",
+         &major_num);
   if (major_num < 0) {
-    printk(KERN_WARNING "sbd: unable to get major number\n");
+    printk("CHRISTIANITY DEBUG: sbd: unable to get major number\n");
     goto out;
   }
   /*
