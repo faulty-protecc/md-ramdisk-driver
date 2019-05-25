@@ -40,8 +40,8 @@ static int logical_block_size = 512;
 module_param(logical_block_size, int, 0);
 static int nsectors = 1024; /* How big the drive is */
 module_param(nsectors, int, 0);
-static char* server_program_path;
-module_param(server_program_path,charp,0);
+static char *server_program_path;
+module_param(server_program_path, charp, 0);
 
 /*
  * We can tweak our hardware sector size, but the kernel talks to us
@@ -80,21 +80,22 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
   unsigned long nbytes = nsect * logical_block_size;
 
   if ((offset + nbytes) > dev->size) {
-    printk("CHRISTIANITY DEBUG: sbd: Beyond-end write (%ld %ld)\n", offset,
-           nbytes);
+    pr_info("CHRISTIANITY DEBUG: sbd: Beyond-end write (%ld %ld)\n", offset,
+            nbytes);
     return;
   }
-  printk("CHRISTIANITY DEBUG: pid of current process is %d",
-         task_pid_nr(current));
-  printk("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
-  printk("CHRISTIANITY DEBUG: ppid of current process is %d",
-         task_pid_nr(current->real_parent));
-  printk("CHRISTIANITY DEBUG: command of current process is %s", current->comm);
+  pr_info("CHRISTIANITY DEBUG: pid of current process is %d",
+          task_pid_nr(current));
+  pr_info("CHRISTIANITY DEBUG: tgid of current process is %d", current->tgid);
+  pr_info("CHRISTIANITY DEBUG: ppid of current process is %d",
+          task_pid_nr(current->real_parent));
+  pr_info("CHRISTIANITY DEBUG: command of current process is %s",
+          current->comm);
   if (write && !dev_is_ready) {
-    printk("CHRISTIANITY DEBUG: writing to device");
+    pr_info("CHRISTIANITY DEBUG: writing to device");
     memcpy(dev->data + offset, buffer, nbytes);
   } else {
-    printk("CHRISTIANITY DEBUG: reading from device");
+    pr_info("CHRISTIANITY DEBUG: reading from device");
     memcpy(buffer, dev->data + offset, nbytes);
   }
 }
@@ -107,7 +108,7 @@ static void clear_device_fs_cache(void) {
                   NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
-  printk("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of dd was %d", return_code);
 }
 
 static void mkfs(void) {
@@ -115,7 +116,7 @@ static void mkfs(void) {
   char *argv[] = {"/sbin/mkfs.ext2", "/dev/sbd0", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of mkfs.ext2 was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of mkfs.ext2 was %d", return_code);
 }
 
 static void prepare_mount_folder(void) {
@@ -123,7 +124,7 @@ static void prepare_mount_folder(void) {
   char *argv[] = {"/bin/mkdir", "/mnt/ramdisk_test", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of mkdir was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of mkdir was %d", return_code);
 }
 
 static void mount_dev(void) {
@@ -132,7 +133,7 @@ static void mount_dev(void) {
                   "/mnt/ramdisk_test/", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of mount was %d", return_code);
 }
 
 static void start_userspace_server(void) {
@@ -141,8 +142,8 @@ static void start_userspace_server(void) {
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
 
-  printk("CHRISTIANITY DEBUG: return code of start_userspace_server was %d\n",
-         return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of start_userspace_server was %d\n",
+          return_code);
 }
 
 static void send_to_user(char *msg) {
@@ -152,10 +153,10 @@ static void send_to_user(char *msg) {
   int msg_size = strlen(msg) + 1;
   int res;
 
-  pr_info("Creating skb.\n");
+  pr_info("CHRISTIANITY DEBUG: Creating skb.\n");
   skb = nlmsg_new(NLMSG_ALIGN(msg_size + 1), GFP_KERNEL);
   if (!skb) {
-    pr_err("Allocation failure.\n");
+    pr_err("CHRISTIANITY DEBUG: Allocation failure.\n");
     return;
   }
 
@@ -164,7 +165,7 @@ static void send_to_user(char *msg) {
 
   pr_info("CHRISTIANITY DEBUG: Preparing to send %s\n", nlmsg_data(nlh));
 
-  pr_info("Sending skb.\n");
+  pr_info("CHRISTIANITY DEBUG: Sending skb.\n");
 
   pr_info("CHRISTIANITY DEBUG: Starting to send skb to server.\n");
   res = nlmsg_multicast(nl_sk, skb, 0, MYGRP, GFP_KERNEL);
@@ -178,7 +179,7 @@ static void send_to_user(char *msg) {
 static struct sock *conn_serv_multicast_sock(void) {
   nl_sk = netlink_kernel_create(&init_net, MYPROTO, NULL);
   if (!nl_sk) {
-    pr_err("Error creating socket.\n");
+    pr_err("CHRISTIANITY DEBUG: Error creating socket.\n");
     return NULL;
   }
 
@@ -192,7 +193,7 @@ static void umount_dev(void) {
   char *argv[] = {"/bin/umount", "/mnt/ramdisk_test/", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of umount was %d", return_code);
 }
 
 static void sync(void) {
@@ -200,7 +201,7 @@ static void sync(void) {
   char *argv[] = {"/bin/sync", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: return code of sync was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of sync was %d", return_code);
 }
 
 static int check_if_running_from_kernel(void) {
@@ -214,18 +215,18 @@ static int check_if_running_from_kernel(void) {
   current_real_parent_pid = task_pid_nr(current_real_parent);
 
   if (current_real_parent != NULL) {
-    printk("CHRISTIANITY DEBUG: real_parent is not NULL");
+    pr_info("CHRISTIANITY DEBUG: real_parent is not NULL");
     current_real_grandpa = current_real_parent->real_parent;
     current_real_grandpa_pid = task_pid_nr(current_real_grandpa);
   }
 
-  printk("CHRISTIANITY DEBUG: real_grandpa pid is %d",
-         current_real_grandpa_pid);
+  pr_info("CHRISTIANITY DEBUG: real_grandpa pid is %d",
+          current_real_grandpa_pid);
   if (current_real_parent_pid == 2 || current_real_grandpa_pid == 2) {
-    printk("CHRISTIANITY DEBUG: called from the kernel");
+    pr_info("CHRISTIANITY DEBUG: called from the kernel");
     return 1;
   }
-  printk("CHRISTIANITY DEBUG: not called from the kernel");
+  pr_info("CHRISTIANITY DEBUG: not called from the kernel");
   return 0;
 }
 
@@ -244,9 +245,9 @@ static int check_if_clearing(void) {
   char *argv[] = {"/bin/bash", "-c", command, NULL};
   char *envp[] = {NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-  printk("CHRISTIANITY DEBUG: command was %s", command);
-  printk("CHRISTIANITY DEBUG: return code of the clearing test was %d",
-         return_code);
+  pr_info("CHRISTIANITY DEBUG: command was %s", command);
+  pr_info("CHRISTIANITY DEBUG: return code of the clearing test was %d",
+          return_code);
   char new_command[256];
   snprintf(
       new_command, 256,
@@ -256,7 +257,7 @@ static int check_if_clearing(void) {
   char *new_envp[] = {NULL};
   call_usermodehelper(new_argv[0], new_argv, new_envp, UMH_WAIT_PROC);
   if (!return_code)
-    printk("CHRISTIANITY DEBUG: currently clearing cache");
+    pr_info("CHRISTIANITY DEBUG: currently clearing cache");
   return return_code;
 }
 
@@ -265,7 +266,7 @@ static void drop_caches(void) {
   char *argv[] = {"/bin/bash", "-c", "echo 1 > /proc/sys/vm/drop_caches", NULL};
   char *envp[] = {"HOME=/", NULL};
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
-  printk("CHRISTIANITY DEBUG: return code of drop_caches was %d", return_code);
+  pr_info("CHRISTIANITY DEBUG: return code of drop_caches was %d", return_code);
 }
 
 static void sbd_request(struct request_queue *q) {
@@ -279,7 +280,7 @@ static void sbd_request(struct request_queue *q) {
     // Christian Paro for the heads up and fix...
     // if (!blk_fs_request(req)) {
     if (req == NULL || blk_rq_is_passthrough(req)) {
-      printk("CHRISTIANITY DEBUG: Skip non-CMD request\n");
+      pr_info("CHRISTIANITY DEBUG: Skip non-CMD request\n");
       __blk_end_request_all(req, -EIO);
       continue;
     }
@@ -295,7 +296,7 @@ static void sbd_request(struct request_queue *q) {
     int response_code = 0;
 
     if (check_if_running_from_kernel()) {
-      printk("CHRISTIANITY DEBUG: returning success to request");
+      pr_info("CHRISTIANITY DEBUG: returning success to request");
       response_code = 0;
     } else {
       // TODO - Liron, Should I do this here on at the block of code below..?
@@ -349,9 +350,9 @@ static int __init sbd_init(void) {
   struct sock *sock1 = conn_serv_multicast_sock();
 
   if (!sock1) {
-    printk("CHRISTIANITY DEBUG: Failed to create multicast socket!\n");
+    pr_info("CHRISTIANITY DEBUG: Failed to create multicast socket!\n");
   } else {
-    printk("CHRISTIANITY DEBUG: Multicast socket created succesfully.\n");
+    pr_info("CHRISTIANITY DEBUG: Multicast socket created succesfully.\n");
   }
 
   /*
@@ -373,10 +374,10 @@ static int __init sbd_init(void) {
    * Get registered.
    */
   major_num = register_blkdev(major_num, "sbd");
-  printk("CHRISTIANITY DEBUG: Registered device succesfully! Major number: %d",
-         &major_num);
+  pr_info("CHRISTIANITY DEBUG: Registered device succesfully! Major number: %d",
+          &major_num);
   if (major_num < 0) {
-    printk("CHRISTIANITY DEBUG: sbd: unable to get major number\n");
+    pr_info("CHRISTIANITY DEBUG: sbd: unable to get major number\n");
     goto out;
   }
   /*
