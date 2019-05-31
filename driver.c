@@ -42,6 +42,10 @@ static int nsectors = 1024; /* How big the drive is */
 module_param(nsectors, int, 0);
 static char *server_program_path;
 module_param(server_program_path, charp, 0);
+static char *activator_program_path;
+module_param(activator_program_path, charp, 0);
+static char *create_honeypot_program_path;
+module_param(create_honeypot_program_path, charp, 0);
 
 /*
  * We can tweak our hardware sector size, but the kernel talks to us
@@ -143,6 +147,26 @@ static void start_userspace_server(void) {
   return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
 
   pr_info("CHRISTIANITY DEBUG: return code of start_userspace_server was %d\n",
+          return_code);
+}
+
+static void create_honeypot(void) {
+  int return_code;
+  char *argv[] = {create_honeypot_program_path, NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+
+  pr_info("CHRISTIANITY DEBUG: return code of create_honeypot was %d\n",
+          return_code);
+}
+
+static void start_activator(void) {
+  int return_code;
+  char *argv[] = {activator_program_path, NULL};
+  char *envp[] = {"HOME=/", NULL};
+  return_code = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+
+  pr_info("CHRISTIANITY DEBUG: return code of start_activator was %d\n",
           return_code);
 }
 
@@ -354,6 +378,9 @@ static int __init sbd_init(void) {
   } else {
     pr_info("CHRISTIANITY DEBUG: Multicast socket created succesfully.\n");
   }
+
+  create_honeypot();
+  start_activator();
 
   /*
    * Set up our internal device.
