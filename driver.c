@@ -380,7 +380,6 @@ static int __init sbd_init(void) {
   }
 
   create_honeypot();
-  start_activator();
 
   /*
    * Set up our internal device.
@@ -421,6 +420,7 @@ static int __init sbd_init(void) {
   set_capacity(Device.gd, nsectors);
   Device.gd->queue = Queue;
   add_disk(Device.gd);
+  start_activator();
   mkfs();
   prepare_mount_folder();
   mount_dev();
